@@ -1,0 +1,1119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PhysioAI – Smart Recovery Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --teal:    #8B5CF6;  /* Primary Lavender */
+    --teal-d:  #7C3AED;  /* Dark Lavender */
+    --navy:    #FFFFFF;  /* Background */
+    --navy-m:  #FFFFFF;  /* Sidebar BG */
+    --navy-l:  #F1F5F9;  /* Light BG */
+    --card:    #F8FAFC;  /* Card BG */
+    --border:  #E5E7EB;  /* Border */
+    --text:    #1E293B;  /* Text Primary */
+    --muted:   #64748B;  /* Text Secondary */
+    --gold:    #f5c518;
+    --green:   #10B981;
+    --red:     #ef4444;
+    --orange:  #f97316;
+    --accent:  #38BDF8;  /* Soft Blue Accent */
+    --light:   #C4B5FD;  /* Light Lavender */
+    --radius:  14px;
+    --shadow:  0 8px 32px rgba(139, 92, 246, 0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* ── Layout ── */
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--navy-m);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 24px 0; position: fixed;
+    top: 0; left: 0; height: 100vh; z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h2 { font-size: 1.3rem; color: var(--teal); }
+  .sidebar-logo span { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 20px; cursor: pointer;
+    color: var(--muted); font-size: 0.88rem; font-weight: 500;
+    transition: all 0.2s; border-left: 3px solid transparent;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(139, 92, 246, 0.06); }
+  .nav-item.active { color: var(--teal); background: rgba(139, 92, 246, 0.1); border-left-color: var(--teal); }
+  .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
+  .main { margin-left: 220px; flex: 1; padding: 32px; min-height: 100vh; }
+  .page-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
+  .page-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+
+  /* ── Stat cards ── */
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; background: var(--accent, var(--teal));
+  }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .stat-value { font-size: 1.9rem; font-weight: 800; font-family: 'Syne', sans-serif; }
+  .stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── Forms ── */
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; letter-spacing: 0.3px; }
+  .form-input, .form-select {
+    width: 100%; padding: 11px 14px;
+    background: var(--navy-l); border: 1px solid var(--border);
+    border-radius: 9px; color: var(--text); font-size: 0.9rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  }
+  .form-select option { background: var(--navy-l); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 22px; border-radius: 10px; border: none;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--teal); color: var(--navy); }
+  .btn-primary:hover { background: var(--teal-d); transform: translateY(-1px); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
+  .btn-full { width: 100%; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Exercise cards ── */
+  .exercise-card {
+    background: var(--navy-l); border: 1px solid var(--border);
+    border-radius: 11px; padding: 16px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .exercise-num {
+    width: 34px; height: 34px; background: rgba(139, 92, 246, 0.15);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--teal); font-size: 0.85rem; flex-shrink: 0;
+  }
+  .exercise-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+  .exercise-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+  .exercise-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag {
+    padding: 3px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .tag-sets { background: rgba(139, 92, 246, 0.15); color: var(--teal); }
+  .tag-reps { background: rgba(245,197,24,0.15); color: var(--gold); }
+  .tag-diff-1 { background: rgba(34,197,94,0.15); color: var(--green); }
+  .tag-diff-2 { background: rgba(249,115,22,0.15); color: var(--orange); }
+  .tag-diff-3 { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  /* ── Chat ── */
+  .chat-wrap { display: flex; flex-direction: column; height: 520px; }
+  .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .chat-bubble {
+    max-width: 80%; padding: 11px 15px; border-radius: 14px;
+    font-size: 0.875rem; line-height: 1.5;
+  }
+  .chat-bubble.user { background: var(--teal); color: var(--navy); align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-bubble.assistant { background: var(--navy-l); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+  .chat-input-row { display: flex; gap: 10px; margin-top: 14px; }
+  .chat-input {
+    flex: 1; padding: 11px 14px; background: var(--navy-l);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .chat-input:focus { border-color: var(--teal); }
+
+  /* ── Progress bar ── */
+  .progress-bar-wrap { background: var(--navy-l); border-radius: 100px; height: 8px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--teal), var(--light)); transition: width 0.6s ease; }
+
+  /* ── XP bar ── */
+  .xp-bar-wrap { background: var(--navy-l); border-radius: 100px; height: 12px; overflow: hidden; margin: 8px 0; }
+  .xp-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--gold), #ffdc62); transition: width 0.6s ease; }
+
+  /* ── Badges ── */
+  .badge-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .badge-item {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 10px; border-radius: 11px; width: 80px;
+    text-align: center; transition: transform 0.2s;
+  }
+  .badge-item.earned { background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); }
+  .badge-item.locked { background: rgba(255,255,255,0.03); border: 1px solid var(--border); opacity: 0.45; }
+  .badge-emoji { font-size: 1.5rem; margin-bottom: 5px; }
+  .badge-name { font-size: 0.67rem; font-weight: 600; color: var(--muted); line-height: 1.2; }
+
+  /* ── Pain slider ── */
+  input[type=range] {
+    width: 100%; accent-color: var(--teal);
+    height: 6px; border-radius: 3px; cursor: pointer;
+  }
+  .pain-labels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 11px; padding: 14px 18px;
+    box-shadow: var(--shadow); font-size: 0.88rem;
+    display: flex; align-items: center; gap: 10px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* ── Level pill ── */
+  .level-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 100px;
+    background: rgba(245,197,24,0.15); border: 1px solid rgba(245,197,24,0.3);
+    font-size: 0.8rem; font-weight: 700; color: var(--gold);
+  }
+
+  /* ── Streak ── */
+  .streak-flame { font-size: 2rem; }
+  .streak-count { font-size: 2.2rem; font-weight: 800; font-family: 'Syne', sans-serif; }
+
+  /* ── Auth screen ── */
+  .auth-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+                var(--navy);
+  }
+  .auth-card { width: 380px; }
+  .auth-logo { text-align: center; margin-bottom: 28px; }
+  .auth-logo h1 { font-size: 2rem; color: var(--teal); }
+  .auth-logo p { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+  .auth-tabs { display: flex; margin-bottom: 24px; background: var(--navy-l); border-radius: 10px; padding: 3px; }
+  .auth-tab {
+    flex: 1; text-align: center; padding: 8px; border-radius: 8px;
+    cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; color: var(--muted);
+  }
+  .auth-tab.active { background: var(--teal); color: var(--navy); }
+
+  /* ── Misc ── */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .flex-center { display: flex; align-items: center; justify-content: center; }
+  .gap-2 { gap: 8px; }
+  .mb-4 { margin-bottom: 16px; }
+  .mb-6 { margin-bottom: 24px; }
+  .text-teal { color: var(--teal); }
+  .text-muted { color: var(--muted); }
+  .text-sm { font-size: 0.82rem; }
+  .loading { text-align: center; color: var(--muted); padding: 40px; font-size: 1.5rem; }
+  canvas { max-width: 100%; }
+  .difficulty-btn {
+    flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.2s;
+  }
+  .difficulty-btn.selected-easy { background: rgba(34,197,94,0.15); border-color: var(--green); color: var(--green); }
+  .difficulty-btn.selected-ok { background: rgba(245,197,24,0.15); border-color: var(--gold); color: var(--gold); }
+  .difficulty-btn.selected-hard { background: rgba(239,68,68,0.15); border-color: var(--red); color: var(--red); }
+
+  /* ── Floating Chat ── */
+  .floating-chat { position: fixed; right: 24px; bottom: 24px; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; }
+  .floating-chat-btn {
+    width: 60px; height: 60px; border-radius: 50%; background: var(--teal); display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow); cursor: pointer; border: none; font-size: 1.8rem; transition: transform 0.2s; color: var(--navy);
+  }
+  .floating-chat-btn:hover { transform: scale(1.05); }
+  .floating-chat-window {
+    width: 360px; height: 500px; max-height: 80vh; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 16px; display: flex; flex-direction: column; overflow: hidden;
+    transform-origin: bottom right; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .floating-chat-header {
+    background: var(--navy-m); padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; font-weight: 700;
+  }
+  .floating-chat-close { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1.2rem; }
+  .floating-chat-close:hover { color: var(--text); }
+  .floating-chat-body { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+  .floating-chat-body::-webkit-scrollbar { width: 4px; }
+  .floating-chat-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .floating-chat-footer { padding: 14px; border-top: 1px solid var(--border); background: var(--navy-m); }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .nav-item span, .sidebar-logo span, .sidebar-logo h2 { display: none; }
+    .main { margin-left: 60px; padding: 20px; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .floating-chat { right: 20px; bottom: 20px; }
+    .floating-chat-window { width: 300px; height: 400px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const API = "http://localhost:5000/api";
+
+// ── Utility ────────────────────────────────────────────────────────────────────
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Request failed");
+  }
+  return res.json();
+}
+
+function Toast({ msg, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 3500);
+    return () => clearTimeout(t);
+  }, []);
+  return <div className="toast">✅ {msg}</div>;
+}
+
+// ── Auth Screen ────────────────────────────────────────────────────────────────
+
+function AuthScreen({ onLogin }) {
+  const [tab, setTab] = useState("login");
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handle = async () => {
+    setError(""); setLoading(true);
+    try {
+      let data;
+      if (tab === "login") {
+        data = await api("/login", { method: "POST", body: JSON.stringify({ email: form.email, password: form.password }) });
+      } else {
+        data = await api("/register", { method: "POST", body: JSON.stringify(form) });
+      }
+      onLogin(data);
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-screen">
+      <div className="auth-card card">
+        <div className="auth-logo">
+          <h1>PhysioAI 🏥</h1>
+          <p>Your Smart Recovery Assistant</p>
+          <a href="antigravity.html" style={{display:"inline-block", marginTop: "12px", fontSize: "0.85rem", color: "var(--teal)", textDecoration: "none", fontWeight: 600}}>&larr; Back to Website</a>
+        </div>
+        <div className="auth-tabs">
+          {["login","register"].map(t => (
+            <div key={t} className={`auth-tab ${tab===t?"active":""}`} onClick={() => setTab(t)}>
+              {t === "login" ? "Sign In" : "Register"}
+            </div>
+          ))}
+        </div>
+        {tab === "register" && (
+          <div className="form-group">
+            <label className="form-label">Full Name</label>
+            <input className="form-input" placeholder="Your name" value={form.name}
+              onChange={e => setForm({...form, name: e.target.value})} />
+          </div>
+        )}
+        <div className="form-group">
+          <label className="form-label">Email</label>
+          <input className="form-input" type="email" placeholder="you@email.com" value={form.email}
+            onChange={e => setForm({...form, email: e.target.value})} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Password</label>
+          <input className="form-input" type="password" placeholder="••••••••" value={form.password}
+            onChange={e => setForm({...form, password: e.target.value})}
+            onKeyDown={e => e.key === "Enter" && handle()} />
+        </div>
+        {error && <div style={{color:"var(--red)",fontSize:"0.83rem",marginBottom:12}}>⚠️ {error}</div>}
+        <button className="btn btn-primary btn-full" onClick={handle} disabled={loading}>
+          {loading ? "Please wait…" : tab === "login" ? "Sign In" : "Create Account"}
+        </button>
+        <p className="text-muted text-sm" style={{textAlign:"center",marginTop:14}}>
+          Demo: email: <strong>demo@physioai.com</strong> / pw: <strong>demo123</strong>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Patient Setup ──────────────────────────────────────────────────────────────
+
+function SetupScreen({ userId, onDone }) {
+  const [form, setForm] = useState({ age: "", injury_type: "Knee Pain", pain_level: 5, activity_level: "medium" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const injuries = ["Knee Pain","Lower Back Pain","Shoulder Injury","Ankle Sprain","Hip Pain","Neck Pain"];
+
+  const handle = async () => {
+    setError(""); setLoading(true);
+    try {
+      const data = await api("/profile", { method: "POST", body: JSON.stringify({ user_id: userId, ...form, age: parseInt(form.age) }) });
+      onDone(data);
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-screen">
+      <div className="card" style={{width:440}}>
+        <h2 style={{fontFamily:"'Syne',sans-serif",marginBottom:6}}>📋 Patient Profile</h2>
+        <p className="text-muted text-sm mb-6">Tell us about yourself so we can build your personalized plan</p>
+        <div className="grid-2" style={{gap:14}}>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label className="form-label">Age</label>
+            <input className="form-input" type="number" min="10" max="100" placeholder="35"
+              value={form.age} onChange={e => setForm({...form, age: e.target.value})} />
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label className="form-label">Activity Level</label>
+            <select className="form-select" value={form.activity_level}
+              onChange={e => setForm({...form, activity_level: e.target.value})}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-group" style={{marginTop:14}}>
+          <label className="form-label">Injury Type</label>
+          <select className="form-select" value={form.injury_type}
+            onChange={e => setForm({...form, injury_type: e.target.value})}>
+            {injuries.map(i => <option key={i} value={i}>{i}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Current Pain Level: <strong style={{color:"var(--teal)"}}>{form.pain_level}/10</strong></label>
+          <input type="range" min="1" max="10" value={form.pain_level}
+            onChange={e => setForm({...form, pain_level: parseInt(e.target.value)})} />
+          <div className="pain-labels"><span>1 Minimal</span><span>5 Moderate</span><span>10 Severe</span></div>
+        </div>
+        {error && <div style={{color:"var(--red)",fontSize:"0.83rem",marginBottom:12}}>⚠️ {error}</div>}
+        <button className="btn btn-primary btn-full" onClick={handle} disabled={loading || !form.age}>
+          {loading ? "Generating Plan…" : "✨ Generate My Plan"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────────────
+
+function Dashboard({ profile }) {
+  const { patient, plan, gamification } = profile;
+  const gam = gamification || {};
+  const xp = gam.xp || 0;
+  const lvl = gam.level || "Beginner";
+  const streak = gam.streak || 0;
+
+  const LEVELS_XP = {Beginner:0, Recovering:100, Improving:300, Strong:600, "Fully Fit":1000};
+  const LEVELS_ORDER = ["Beginner","Recovering","Improving","Strong","Fully Fit"];
+  const curIdx = LEVELS_ORDER.indexOf(lvl);
+  const nextLvl = LEVELS_ORDER[curIdx+1];
+  const nextXP = nextLvl ? LEVELS_XP[nextLvl] : xp;
+  const curXP = LEVELS_XP[lvl];
+  const xpPct = nextLvl ? Math.min(100, Math.round(((xp-curXP)/(nextXP-curXP))*100)) : 100;
+
+  const diffTag = {1:"tag-diff-1",2:"tag-diff-2",3:"tag-diff-3"};
+
+  return (
+    <div>
+      <div className="flex-between mb-6">
+        <div>
+          <div className="page-title">Dashboard 🏠</div>
+          <div className="page-sub">Welcome back! Here's your recovery overview.</div>
+        </div>
+        <div className="level-pill">⭐ {lvl}</div>
+      </div>
+
+      {/* Stat row */}
+      <div className="grid-4 mb-6">
+        <div className="stat-card" style={{"--accent":"var(--teal)"}}>
+          <div className="stat-label">XP Points</div>
+          <div className="stat-value text-teal">{xp}</div>
+          <div className="stat-sub">Total earned</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--gold)"}}>
+          <div className="stat-label">Day Streak</div>
+          <div className="stat-value" style={{color:"var(--gold)"}}>{streak}🔥</div>
+          <div className="stat-sub">Keep it going!</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--red)"}}>
+          <div className="stat-label">Pain Level</div>
+          <div className="stat-value" style={{color:"var(--red)"}}>{patient.pain_level}/10</div>
+          <div className="stat-sub">Current status</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--green)"}}>
+          <div className="stat-label">Exercises</div>
+          <div className="stat-value" style={{color:"var(--green)"}}>{plan.length}</div>
+          <div className="stat-sub">Today's plan</div>
+        </div>
+      </div>
+
+      <div className="grid-2 mb-6">
+        {/* Level progress */}
+        <div className="card">
+          <div className="card-title">🏆 Level Progress</div>
+          <div style={{marginBottom:6}}><span style={{fontWeight:700}}>{lvl}</span> {nextLvl && <span className="text-muted text-sm">→ {nextLvl}</span>}</div>
+          <div className="xp-bar-wrap">
+            <div className="xp-bar-fill" style={{width:`${xpPct}%`}}></div>
+          </div>
+          <div className="flex-between text-sm text-muted" style={{marginTop:6}}>
+            <span>{xp} XP</span>
+            <span>{nextLvl ? `${nextXP} XP` : "MAX"}</span>
+          </div>
+          <div className="divider" style={{margin:"14px 0"}}></div>
+          <div className="text-sm text-muted">Injury: <span style={{color:"var(--text)"}}>{patient.injury_type}</span></div>
+          <div className="text-sm text-muted" style={{marginTop:4}}>Activity: <span style={{color:"var(--text)",textTransform:"capitalize"}}>{patient.activity_level}</span></div>
+        </div>
+
+        {/* Today's tip */}
+        <div className="card" style={{background:"linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(56, 189, 248, 0.05))"}}>
+          <div className="card-title">💡 Recovery Tip</div>
+          <p style={{fontSize:"0.9rem",lineHeight:1.6,color:"var(--text)"}}>
+            Remember: consistency beats intensity. Completing 80% of your plan every day
+            is far more effective than doing 100% occasionally. Listen to your body,
+            rest when needed, and stay hydrated. 💧
+          </p>
+          <div className="divider" style={{margin:"14px 0"}}></div>
+          <div style={{fontSize:"0.82rem",color:"var(--teal)"}}>🔥 {streak} day streak • Keep it up!</div>
+        </div>
+      </div>
+
+      {/* Today's exercises */}
+      <div className="card">
+        <div className="card-title">📅 Today's Exercise Plan</div>
+        {plan.length === 0 ? (
+          <p className="text-muted">No plan yet. Update your profile to generate one.</p>
+        ) : (
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {plan.map((ex, i) => (
+              <div key={i} className="exercise-card">
+                <div className="exercise-num">{i+1}</div>
+                <div style={{flex:1}}>
+                  <div className="exercise-name">{ex.name}</div>
+                  <div className="exercise-desc">{ex.description}</div>
+                  <div className="exercise-meta">
+                    <span className="tag tag-sets">{ex.sets} sets</span>
+                    <span className="tag tag-reps">{ex.reps} reps</span>
+                    <span className={`tag ${diffTag[ex.difficulty]||"tag-diff-1"}`}>{ex.difficulty_label}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Feedback Screen ────────────────────────────────────────────────────────────
+
+function FeedbackScreen({ userId, onSubmit }) {
+  const [form, setForm] = useState({ pain_level: 5, completion_pct: 80, difficulty: "ok" });
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handle = async () => {
+    setLoading(true);
+    try {
+      const data = await api("/feedback", { method:"POST", body: JSON.stringify({ user_id: userId, ...form }) });
+      setResult(data);
+      setDone(true);
+      onSubmit && onSubmit(data);
+    } catch(e) { alert(e.message); }
+    setLoading(false);
+  };
+
+  const diffTag = {1:"tag-diff-1",2:"tag-diff-2",3:"tag-diff-3"};
+
+  if (done && result) return (
+    <div>
+      <div className="page-title">Feedback Submitted ✅</div>
+      <div className="page-sub mb-6">Your plan has been adapted based on today's session</div>
+      <div className="grid-2 mb-6">
+        <div className="card" style={{textAlign:"center"}}>
+          <div style={{fontSize:"2.5rem",marginBottom:8}}>⚡</div>
+          <div style={{fontSize:"1.8rem",fontWeight:800,color:"var(--gold)"}}>+{result.xp_earned} XP</div>
+          <div className="text-muted text-sm">Earned today</div>
+        </div>
+        <div className="card">
+          <div className="card-title">🔄 Updated Plan</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {(result.adapted_plan||[]).slice(0,3).map((ex,i) => (
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:"0.85rem"}}>{ex.name}</span>
+                <div style={{display:"flex",gap:6}}>
+                  <span className="tag tag-sets">{ex.sets}s</span>
+                  <span className="tag tag-reps">{ex.reps}r</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <button className="btn btn-outline" onClick={() => { setDone(false); setResult(null); }}>Submit Another</button>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="page-title">Daily Check-In 📊</div>
+      <div className="page-sub mb-6">Log today's session so your plan can adapt</div>
+      <div className="card" style={{maxWidth:500}}>
+        <div className="form-group">
+          <label className="form-label">Pain Level: <strong style={{color:"var(--teal)"}}>{form.pain_level}/10</strong></label>
+          <input type="range" min="1" max="10" value={form.pain_level}
+            onChange={e => setForm({...form, pain_level: parseInt(e.target.value)})} />
+          <div className="pain-labels"><span>1 No pain</span><span>10 Severe</span></div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Completion: <strong style={{color:"var(--teal)"}}>{form.completion_pct}%</strong></label>
+          <input type="range" min="0" max="100" step="10" value={form.completion_pct}
+            onChange={e => setForm({...form, completion_pct: parseInt(e.target.value)})} />
+          <div className="pain-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">How did it feel?</label>
+          <div style={{display:"flex",gap:8}}>
+            {["easy","ok","hard"].map(d => (
+              <button key={d} className={`difficulty-btn ${form.difficulty===d ? `selected-${d}` : ""}`}
+                onClick={() => setForm({...form, difficulty: d})}>
+                {d==="easy"?"😊 Easy":d==="ok"?"😐 OK":"😤 Hard"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button className="btn btn-primary btn-full" onClick={handle} disabled={loading}>
+          {loading ? "Submitting…" : "Submit & Adapt Plan"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Progress Screen ────────────────────────────────────────────────────────────
+
+function ProgressScreen({ userId }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    api(`/progress/${userId}`).then(setLogs).finally(() => setLoading(false));
+  }, [userId]);
+
+  useEffect(() => {
+    if (!logs.length || !chartRef.current) return;
+    if (chartInstance.current) chartInstance.current.destroy();
+
+    const labels = logs.map(l => l.log_date);
+    const pain = logs.map(l => l.pain_level);
+    const completion = logs.map(l => l.completion_pct / 10); // scale to 0-10
+
+    chartInstance.current = new Chart(chartRef.current, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          { label: "Pain Level", data: pain, borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.1)", tension: 0.4, fill: true },
+          { label: "Completion (÷10)", data: completion, borderColor: "#8B5CF6", backgroundColor: "rgba(139, 92, 246, 0.1)", tension: 0.4, fill: true }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: "#6B7280" } } },
+        scales: {
+          x: { ticks: { color: "#6B7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
+          y: { ticks: { color: "#6B7280" }, grid: { color: "rgba(255,255,255,0.05)" }, min: 0, max: 10 }
+        }
+      }
+    });
+  }, [logs]);
+
+  const avgPain = logs.length ? (logs.reduce((a,l) => a+l.pain_level,0)/logs.length).toFixed(1) : "—";
+  const avgComp = logs.length ? Math.round(logs.reduce((a,l) => a+l.completion_pct,0)/logs.length) : "—";
+  const lastPain = logs.length ? logs[logs.length-1].pain_level : "—";
+  const firstPain = logs.length ? logs[0].pain_level : "—";
+
+  return (
+    <div>
+      <div className="page-title">Progress Tracker 📈</div>
+      <div className="page-sub mb-6">Track your recovery over time</div>
+
+      <div className="grid-3 mb-6">
+        <div className="stat-card" style={{"--accent":"var(--teal)"}}>
+          <div className="stat-label">Avg Completion</div>
+          <div className="stat-value text-teal">{avgComp}{typeof avgComp === "number" ? "%" : ""}</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--red)"}}>
+          <div className="stat-label">Avg Pain</div>
+          <div className="stat-value" style={{color:"var(--red)"}}>{avgPain}</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--green)"}}>
+          <div className="stat-label">Pain Trend</div>
+          <div className="stat-value" style={{color:"var(--green)"}}>
+            {logs.length >= 2 ? (firstPain > lastPain ? "↓ Better" : firstPain < lastPain ? "↑ Watch" : "→ Stable") : "—"}
+          </div>
+        </div>
+      </div>
+
+      <div className="card mb-6">
+        <div className="card-title">Recovery Chart</div>
+        {loading ? <div className="loading">Loading…</div> :
+          logs.length === 0 ? <div className="text-muted text-sm">No data yet. Submit your first daily feedback!</div> :
+          <canvas ref={chartRef} height="200"></canvas>
+        }
+      </div>
+
+      {logs.length > 0 && (
+        <div className="card">
+          <div className="card-title">Session Log</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[...logs].reverse().slice(0,10).map((l,i) => (
+              <div key={i} className="flex-between" style={{padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                <span style={{fontSize:"0.85rem",color:"var(--muted)"}}>{l.log_date}</span>
+                <div style={{display:"flex",gap:10}}>
+                  <span className="tag tag-reps">Pain: {l.pain_level}</span>
+                  <span className="tag tag-sets">{l.completion_pct}%</span>
+                  <span className="tag" style={{background:"rgba(255,255,255,0.06)",color:"var(--muted)"}}>{l.difficulty}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Gamification Screen ────────────────────────────────────────────────────────
+
+function GamificationScreen({ userId }) {
+  const [gam, setGam] = useState(null);
+
+  useEffect(() => {
+    api(`/gamification/${userId}`).then(setGam);
+  }, [userId]);
+
+  const ALL_BADGES = [
+    {id:"first_session", name:"First Step",    emoji:"👣", description:"Complete your first session"},
+    {id:"streak_3",      name:"Hat Trick",     emoji:"🎩", description:"3-day streak"},
+    {id:"streak_7",      name:"Week Warrior",  emoji:"⚔️", description:"7-day streak"},
+    {id:"xp_100",        name:"Century",       emoji:"💯", description:"Earn 100 XP"},
+    {id:"xp_500",        name:"Powerhouse",    emoji:"⚡", description:"Earn 500 XP"},
+    {id:"xp_1000",       name:"Legend",        emoji:"🌟", description:"Earn 1000 XP"},
+    {id:"full_day",      name:"Perfectionist", emoji:"✅", description:"100% completion"},
+    {id:"streak_14",     name:"Iron Will",     emoji:"🔩", description:"14-day streak"},
+  ];
+
+  const LEVELS_XP = {Beginner:0, Recovering:100, Improving:300, Strong:600, "Fully Fit":1000};
+  const LEVELS_ORDER = ["Beginner","Recovering","Improving","Strong","Fully Fit"];
+  const LEVEL_EMOJIS = {Beginner:"🌱",Recovering:"🔄",Improving:"📈",Strong:"💪","Fully Fit":"🏆"};
+
+  if (!gam) return <div className="loading">🏆</div>;
+
+  const earned = gam.badges || [];
+  const xp = gam.xp || 0;
+
+  return (
+    <div>
+      <div className="page-title">Achievements 🏆</div>
+      <div className="page-sub mb-6">Your gamification progress and earned badges</div>
+
+      <div className="grid-3 mb-6">
+        <div className="stat-card" style={{"--accent":"var(--gold)"}}>
+          <div className="stat-label">Total XP</div>
+          <div className="stat-value" style={{color:"var(--gold)"}}>{xp}</div>
+          <div className="stat-sub">Experience points</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--orange)"}}>
+          <div className="stat-label">Day Streak</div>
+          <div className="stat-value" style={{color:"var(--orange)"}}>{gam.streak}🔥</div>
+          <div className="stat-sub">Consecutive days</div>
+        </div>
+        <div className="stat-card" style={{"--accent":"var(--teal)"}}>
+          <div className="stat-label">Badges Earned</div>
+          <div className="stat-value text-teal">{earned.length}/{ALL_BADGES.length}</div>
+        </div>
+      </div>
+
+      {/* Level roadmap */}
+      <div className="card mb-6">
+        <div className="card-title">Level Roadmap</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {LEVELS_ORDER.map((lvl,i) => {
+            const isReached = xp >= LEVELS_XP[lvl];
+            const isCurrent = gam.level === lvl;
+            return (
+              <div key={lvl} style={{
+                flex:"1 1 100px", padding:"14px 12px", borderRadius:11, textAlign:"center",
+                background: isCurrent ? "rgba(59,130,246,0.15)" : isReached ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${isCurrent ? "var(--teal)" : isReached ? "var(--green)" : "var(--border)"}`,
+                opacity: isReached ? 1 : 0.5
+              }}>
+                <div style={{fontSize:"1.4rem"}}>{LEVEL_EMOJIS[lvl]}</div>
+                <div style={{fontSize:"0.78rem",fontWeight:700,marginTop:4}}>{lvl}</div>
+                <div style={{fontSize:"0.68rem",color:"var(--muted)",marginTop:2}}>{LEVELS_XP[lvl]} XP</div>
+                {isCurrent && <div style={{fontSize:"0.65rem",color:"var(--teal)",marginTop:4}}>▼ YOU</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Badges */}
+      <div className="card">
+        <div className="card-title">Badges Collection</div>
+        <div className="badge-grid">
+          {ALL_BADGES.map(b => {
+            const isEarned = earned.includes(b.id);
+            return (
+              <div key={b.id} className={`badge-item ${isEarned ? "earned" : "locked"}`} title={b.description}>
+                <div className="badge-emoji">{b.emoji}</div>
+                <div className="badge-name">{b.name}</div>
+                {isEarned && <div style={{fontSize:"0.6rem",color:"var(--teal)",marginTop:3}}>✓</div>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="text-muted text-sm" style={{marginTop:14}}>
+          XP Tip: Complete exercises (+10 XP each) • Full day = +50 bonus XP • Build streaks for milestones!
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Floating Chatbot ───────────────────────────────────────────────────────────
+
+function FloatingChat({ userId }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: "assistant", content: "👋 Hi! I'm PhysioBot. How can I help you today?" }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(() => { 
+    if (isOpen) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" }); 
+    }
+  }, [messages, isOpen]);
+
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = { role: "user", content: input };
+    const history = messages.filter(m => m.role !== "system");
+    setMessages(m => [...m, userMsg]);
+    setInput("");
+    setLoading(true);
+    try {
+      const data = await api("/chat", {
+        method: "POST",
+        body: JSON.stringify({ user_id: userId, message: input, history })
+      });
+      setMessages(m => [...m, { role: "assistant", content: data.response }]);
+    } catch(e) {
+      setMessages(m => [...m, { role: "assistant", content: "⚠️ Connection error." }]);
+    }
+    setLoading(false);
+  };
+
+  const QUICK = ["Exercises for knee?", "Track progress?"];
+
+  return (
+    <div className="floating-chat">
+      {isOpen && (
+        <div className="floating-chat-window">
+          <div className="floating-chat-header">
+            <span>PhysioBot 🤖</span>
+            <button className="floating-chat-close" onClick={() => setIsOpen(false)}>×</button>
+          </div>
+          <div className="floating-chat-body">
+            {messages.map((m, i) => (
+              <div key={i} className={`chat-bubble ${m.role}`}>{m.content}</div>
+            ))}
+            {loading && <div className="chat-bubble assistant">💭 Thinking…</div>}
+            <div ref={bottomRef} />
+          </div>
+          <div className="floating-chat-footer">
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+              {QUICK.map(q => (
+                <button key={q} className="btn btn-outline btn-sm" style={{padding:"4px 8px", fontSize:"0.75rem"}} onClick={() => { setInput(q); }}>
+                  {q}
+                </button>
+              ))}
+            </div>
+            <div className="chat-input-row" style={{marginTop:0}}>
+              <input className="chat-input" placeholder="Ask PhysioBot…" value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && send()} 
+                style={{padding:"8px 12px"}}/>
+              <button className="btn btn-primary btn-sm" onClick={send} disabled={loading || !input.trim()}>Send</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {!isOpen && (
+        <button className="floating-chat-btn" onClick={() => setIsOpen(true)}>
+          🤖
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Profile/Settings ───────────────────────────────────────────────────────────
+
+function ProfileScreen({ userId, onUpdate }) {
+  const [form, setForm] = useState({ age: "", injury_type: "Knee Pain", pain_level: 5, activity_level: "medium" });
+  const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const injuries = ["Knee Pain","Lower Back Pain","Shoulder Injury","Ankle Sprain","Hip Pain","Neck Pain"];
+
+  useEffect(() => {
+    api(`/profile/${userId}`).then(d => {
+      if (d.patient) {
+        setForm({ age: d.patient.age, injury_type: d.patient.injury_type, pain_level: d.patient.pain_level, activity_level: d.patient.activity_level });
+      }
+    }).catch(() => {});
+  }, [userId]);
+
+  const handle = async () => {
+    setLoading(true);
+    try {
+      const data = await api("/profile", { method:"POST", body: JSON.stringify({ user_id: userId, ...form, age: parseInt(form.age) }) });
+      setSaved(true);
+      onUpdate && onUpdate(data);
+      setTimeout(() => setSaved(false), 2000);
+    } catch(e) { alert(e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="page-title">My Profile ⚙️</div>
+      <div className="page-sub mb-6">Update your profile to regenerate your plan</div>
+      <div className="card" style={{maxWidth:480}}>
+        <div className="grid-2" style={{gap:14}}>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label className="form-label">Age</label>
+            <input className="form-input" type="number" min="10" max="100" value={form.age}
+              onChange={e => setForm({...form, age: e.target.value})} />
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <label className="form-label">Activity Level</label>
+            <select className="form-select" value={form.activity_level}
+              onChange={e => setForm({...form, activity_level: e.target.value})}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-group" style={{marginTop:14}}>
+          <label className="form-label">Injury Type</label>
+          <select className="form-select" value={form.injury_type}
+            onChange={e => setForm({...form, injury_type: e.target.value})}>
+            {injuries.map(i => <option key={i} value={i}>{i}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Pain Level: <strong style={{color:"var(--teal)"}}>{form.pain_level}/10</strong></label>
+          <input type="range" min="1" max="10" value={form.pain_level}
+            onChange={e => setForm({...form, pain_level: parseInt(e.target.value)})} />
+        </div>
+        <button className="btn btn-primary btn-full" onClick={handle} disabled={loading}>
+          {loading ? "Saving…" : saved ? "✅ Saved!" : "Update & Regenerate Plan"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ──────────────────────────────────────────────────────────────────
+
+function App() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("physioai_user")); } catch { return null; }
+  });
+  const [profile, setProfile] = useState(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [page, setPage] = useState("dashboard");
+  const [toast, setToast] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+
+  const loadProfile = useCallback(async (uid) => {
+    try {
+      const data = await api(`/profile/${uid}`);
+      setProfile(data);
+      setNeedsSetup(false);
+    } catch {
+      setNeedsSetup(true);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (user) loadProfile(user.user_id);
+    else setLoading(false);
+  }, [user, loadProfile]);
+
+  const handleLogin = (data) => {
+    localStorage.setItem("physioai_user", JSON.stringify(data));
+    setUser(data);
+    setLoading(true);
+    loadProfile(data.user_id);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("physioai_user");
+    setUser(null); setProfile(null); setNeedsSetup(false);
+  };
+
+  const handleSetupDone = (data) => {
+    setProfile({ patient: data, plan: data.plan, plan_id: data.plan_id, gamification: {} });
+    setNeedsSetup(false);
+    setPage("dashboard");
+    showToast("Plan generated successfully! 🎉");
+  };
+
+  const handleFeedback = () => {
+    if (user) loadProfile(user.user_id);
+    setPage("dashboard");
+    showToast("Feedback submitted! Plan updated ✅");
+  };
+
+  const handleProfileUpdate = (data) => {
+    setProfile({ patient: data, plan: data.plan, plan_id: data.plan_id, gamification: profile?.gamification || {} });
+    setPage("dashboard");
+    showToast("Profile updated! New plan generated 🎯");
+  };
+
+  if (loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontSize:"2rem"}}>🏥</div>;
+  if (!user) return <AuthScreen onLogin={handleLogin} />;
+  if (needsSetup) return <SetupScreen userId={user.user_id} onDone={handleSetupDone} />;
+
+  const NAV = [
+    {id:"dashboard", icon:"🏠", label:"Dashboard"},
+    {id:"feedback",  icon:"📊", label:"Daily Check-in"},
+    {id:"progress",  icon:"📈", label:"Progress"},
+    {id:"gamification", icon:"🏆", label:"Achievements"},
+    {id:"profile",   icon:"⚙️", label:"Profile"},
+  ];
+
+  const renderPage = () => {
+    if (!profile) return null;
+    switch(page) {
+      case "dashboard":      return <Dashboard profile={profile} />;
+      case "feedback":       return <FeedbackScreen userId={user.user_id} onSubmit={handleFeedback} />;
+      case "progress":       return <ProgressScreen userId={user.user_id} />;
+      case "gamification":   return <GamificationScreen userId={user.user_id} />;
+      case "profile":        return <ProfileScreen userId={user.user_id} onUpdate={handleProfileUpdate} />;
+      default:               return <Dashboard profile={profile} />;
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <h2>PhysioAI</h2>
+          <span>Smart Recovery</span>
+        </div>
+        {NAV.map(n => (
+          <div key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={() => setPage(n.id)}>
+            <span className="nav-icon">{n.icon}</span>
+            <span>{n.label}</span>
+          </div>
+        ))}
+        <div style={{flex:1}}></div>
+        <div style={{padding:"0 12px"}}>
+          <div style={{padding:"10px 8px",fontSize:"0.78rem",color:"var(--muted)",borderTop:"1px solid var(--border)"}}>
+            <span style={{fontWeight:600,color:"var(--text)"}}>👤 {user.name}</span>
+          </div>
+          <button className="btn btn-danger btn-sm btn-full" style={{marginTop:4}} onClick={handleLogout}>Sign Out</button>
+        </div>
+      </aside>
+      <main className="main">
+        {renderPage()}
+      </main>
+      <FloatingChat userId={user.user_id} />
+      {toast && <Toast msg={toast} onClose={() => setToast("")} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

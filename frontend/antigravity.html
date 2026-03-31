@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhysioAI by Antigravity | Smart Recovery Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #F8FAFC;    /* Very light slate */
+      --bg-light: #FFFFFF;   /* Pure white */
+      --teal-light: #8B5CF6; /* Primary Lavender */
+      --teal-dark: #7C3AED;  /* Dark Lavender */
+      --text-main: #1E293B;  /* Slate 800 */
+      --text-muted: #64748B; /* Slate 500 */
+      /* Light glassmorphism */
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(139, 92, 246, 0.15); /* subtle lavender border */
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Ambient Glow Effects in Background - Switched to light lavender glow */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -20%; left: -10%;
+      width: 600px; height: 600px;
+      /* Soft lavender */
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
+      filter: blur(80px);
+      z-index: -1;
+      border-radius: 50%;
+    }
+    body::after {
+      content: '';
+      position: absolute;
+      bottom: -20%; right: -10%;
+      width: 500px; height: 500px;
+      /* Soft blue accent to match */
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+      filter: blur(80px);
+      z-index: -1;
+      border-radius: 50%;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 80px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255, 255, 255, 0.6);
+    }
+    
+    .nav-logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo span {
+      background: linear-gradient(90deg, var(--teal-light), var(--teal-dark));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex; gap: 32px;
+      list-style: none;
+    }
+    .nav-links li a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links li a:hover { color: var(--text-main); }
+
+    .nav-cta a {
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: rgba(139, 92, 246, 0.08); /* Lavender tint background */
+      color: var(--teal-light);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      transition: all 0.3s;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.05); /* very soft glow */
+    }
+    .nav-cta a:hover {
+      background: var(--teal-light);
+      color: #FFFFFF; /* High contrast text on primary bg */
+      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+    }
+
+    /* Hero Layout */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }
+
+    .hero-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      min-height: 70vh;
+    }
+
+    /* Left Side: Copy */
+    .hero-content {
+      display: flex; flex-direction: column; align-items: flex-start;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 100px;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--teal-light);
+      margin-bottom: 24px;
+    }
+    .badge-dot {
+      width: 8px; height: 8px;
+      background: var(--teal-light);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+    }
+
+    .hero-title {
+      font-size: 4.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+      color: var(--text-main);
+    }
+    .hero-title .gradient-text {
+      background: linear-gradient(135deg, var(--teal-light), var(--teal-dark));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      max-width: 90%;
+    }
+
+    .hero-actions {
+      display: flex; gap: 16px; margin-bottom: 40px;
+    }
+    
+    .btn {
+      padding: 14px 28px; border-radius: 12px; font-size: 1rem;
+      font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--teal-light), var(--teal-dark));
+      color: #FFFFFF;
+      border: none;
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.25);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.35);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: var(--bg-light);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* very subtle drop shadow */
+    }
+    .btn-secondary:hover {
+      background: var(--bg-dark);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .hero-features {
+      list-style: none; display: flex; flex-direction: column; gap: 12px;
+    }
+    .hero-features li {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-muted); font-size: 0.95rem; font-weight: 500;
+    }
+    .hero-features li svg { color: var(--teal-light); width: 20px; height: 20px; }
+
+    /* Right Side: Glass Dashboard */
+    .hero-visual {
+      position: relative;
+    }
+    
+    .glass-card {
+      background: var(--glass-bg);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 24px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      /* Changed to a light theme specific drop shadow */
+      box-shadow: 0 24px 60px rgba(139, 92, 246, 0.1), 0 10px 25px rgba(0, 0, 0, 0.05);
+      animation: float 6s ease-in-out infinite;
+      position: relative;
+    }
+    /* Thin top highlight using primary color */
+    .glass-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--teal-light), #60A5FA);
+      border-radius: 24px 24px 0 0;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .card-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); /* replaced with light border */
+    }
+    .card-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+    .card-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px;}
+    .pulse-dot { width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .module-list {
+      list-style: none; display: flex; flex-direction: column; gap: 14px;
+    }
+    .module-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px;
+      background: var(--bg-dark); /* Using light slade bg */
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .module-item:hover {
+      background: rgba(139, 92, 246, 0.03); /* very soft lavender hover */
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+    .module-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+    
+    .tag {
+      padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2px;
+    }
+    .tag-easy { background: rgba(16, 185, 129, 0.15); color: #10B981; }
+    .tag-med { background: rgba(245, 197, 24, 0.15); color: #f5c518; }
+    .tag-adv { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    .card-stats {
+      display: flex; justify-content: space-between; margin-top: 24px;
+      padding-top: 20px; border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .stat { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+    .stat span { color: var(--text-main); font-weight: 800; }
+
+    /* Features Section */
+    .features-section { padding: 80px 40px; }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1200px; margin: 0 auto; }
+    
+    .feature-card {
+      background: var(--glass-bg);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 20px;
+      padding: 32px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03); /* soft drop shadow */
+    }
+    /* Subtle hover gradient tracking mouse adapted for light theme */
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, -100%), rgba(139, 92, 246, 0.08), transparent 40%);
+      z-index: 0; transition: opacity 0.3s; opacity: 0;
+    }
+    .feature-card:hover { 
+      transform: translateY(-5px); 
+      border-color: rgba(139, 92, 246, 0.3); 
+      box-shadow: 0 16px 40px rgba(139, 92, 246, 0.12); 
+    }
+    .feature-card:hover::before { opacity: 1; }
+    
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: rgba(139, 92, 246, 0.12);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; border: 1px solid rgba(139, 92, 246, 0.2);
+      position: relative; z-index: 1;
+    }
+    .feature-icon svg { width: 24px; height: 24px; color: var(--teal-light); }
+    .feature-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; position: relative; z-index: 1; color: var(--text-main); }
+    .feature-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; position: relative; z-index: 1;}
+
+    @media (max-width: 1024px) {
+      .hero-split { grid-template-columns: 1fr; text-align: center; gap: 40px; }
+      .hero-content { align-items: center; }
+      .hero-desc { max-width: 100%; }
+      .hero-features { align-items: center; }
+      .features-grid { grid-template-columns: 1fr; }
+      .navbar { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#teal-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <defs>
+          <linearGradient id="teal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#8B5CF6" />
+            <stop offset="100%" stop-color="#7C3AED" />
+          </linearGradient>
+        </defs>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="M12 8v4M10 10h4"/>
+      </svg>
+      <span>PhysioAI</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#">How it Works</a></li>
+      <li><a href="#">Gamification</a></li>
+      <li><a href="#">AI Chat</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="index.html">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <main class="container">
+    <div class="hero-split">
+      
+      <!-- Left Content -->
+      <div class="hero-content">
+        <div class="badge">
+          <div class="badge-dot"></div>
+          AI-Powered Recovery Assistant
+        </div>
+        
+        <h1 class="hero-title">
+          Heal Smarter. Faster <br/><span class="gradient-text">Recovery</span> with AI
+        </h1>
+        
+        <p class="hero-desc">
+          PhysioAI generates personalized, dynamic rehabilitation plans that adapt daily to your pain levels and progress — turning your recovery journey into a guided, gamified experience.
+        </p>
+
+        <div class="hero-actions">
+          <a href="index.html" class="btn btn-primary">Start Recovery &rarr;</a>
+          <a href="#" class="btn btn-secondary">View Gamification</a>
+        </div>
+
+        <ul class="hero-features">
+          <li>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Personalized Exercise Plans
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Adaptive Daily Routines
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Gamified Healing
+          </li>
+        </ul>
+      </div>
+
+      <!-- Right Visual -->
+      <div class="hero-visual">
+        <div class="glass-card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Daily Recovery Plan</div>
+              <div class="card-sub"><div class="pulse-dot"></div> 5 exercises &bull; Active</div>
+            </div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          </div>
+
+          <ul class="module-list">
+            <li class="module-item">
+              <span class="module-name">Seated Knee Extensions</span>
+              <span class="tag tag-easy">Easy</span>
+            </li>
+            <li class="module-item">
+              <span class="module-name">Glute Bridges</span>
+              <span class="tag tag-med">Medium</span>
+            </li>
+            <li class="module-item">
+              <span class="module-name">Wall Squats</span>
+              <span class="tag tag-med">Medium</span>
+            </li>
+            <li class="module-item">
+              <span class="module-name">Single Leg Balance</span>
+              <span class="tag tag-adv">Hard</span>
+            </li>
+          </ul>
+
+          <div class="card-stats">
+            <div class="stat">🏆 <span>300 XP</span> &bull; Improving</div>
+            <div class="stat">🔥 <span>18 day</span> streak</div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <!-- Features Section -->
+  <section class="features-section">
+    <div class="features-grid">
+      
+      <!-- Feature 1 -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        </div>
+        <h3 class="feature-title">Dynamic Plan Generation</h3>
+        <p class="feature-desc">Analyzes your specific injury, age, and activity level to build a custom, safe exercise regimen from day one.</p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3 class="feature-title">Smart Daily Adaptation</h3>
+        <p class="feature-desc">Log your daily pain and completion rates. Our AI adapts your next sessions to ensure steady, pain-free improvement.</p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3 class="feature-title">24/7 AI Physiotherapist</h3>
+        <p class="feature-desc">Chat instantly with your virtual assistant for recovery tips, form guidance, and encouragement whenever you need it.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Interactivity Script for Glow Effect -->
+  <script>
+    document.querySelectorAll('.feature-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+  </script>
+
+</body>
+</html>
