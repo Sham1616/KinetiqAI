@@ -1,86 +1,300 @@
-# KinetiqAI
-AI-Powered Personalized Physiotherapy System
+# KinetiqAI  
+### AI-Powered Personalized Physiotherapy Recovery System
 
-KinetiqAI
-AI-Powered Personalized Physiotherapy Recovery System
-Smarter rehabilitation through adaptive AI — personalized exercise plans that evolve with your recovery.
+KinetiqAI is an intelligent physiotherapy recovery platform that helps users recover from common injuries through **personalized exercise plans, daily feedback adaptation, AI-assisted guidance, and gamified motivation**.
 
-Overview
-KinetiqAI is an intelligent physiotherapy recovery platform designed to make rehabilitation more accessible, adaptive, and engaging. Unlike static recovery programs, KinetiqAI generates dynamic, personalized exercise plans that continuously evolve based on each user's daily progress and pain feedback.
-The platform combines AI-assisted exercise planning, real-time progress tracking, adaptive daily feedback, and a gamification layer — all powered by a rule-based rehabilitation engine tailored to the user's injury profile.
+Built for smarter rehabilitation, the system adjusts recovery plans based on:
+- injury type
+- pain level
+- activity level
+- progress history
+- recurring injury severity
 
-Key Features
+---
 
-Personalized Recovery Plans
-Generates custom physiotherapy programs based on age, injury type, current pain level, and activity level — ensuring each plan is medically appropriate and progressively challenging.
+## 🚀 Overview
 
-Adaptive Daily Feedback System
-After every session, users submit feedback (pain level, completion rate, difficulty). The system automatically adjusts the next session's intensity and exercise selection accordingly.
+KinetiqAI is designed to make physiotherapy more **accessible, adaptive, and engaging**.
 
-Injury-Specific Rehabilitation
-Supports six common injury categories
+Instead of static recovery plans, the platform creates **dynamic, personalized exercise programs** that evolve based on the user’s daily progress and pain feedback.
 
-Progressive Recovery Logic
-Tracks recurring injury cycles and intelligently reduces intensity for safer rehabilitation when a user re-injures the same area.
+It combines:
+- **AI-assisted exercise planning**
+- **progress tracking**
+- **daily adaptation**
+- **gamification**
+- **chatbot support**
 
-Gamification Layer
-Keeps users engaged and consistent through XP rewards, recovery levels, daily streaks, and achievement badges.
+---
 
-AI Recovery Chatbot
-An integrated assistant for answering recovery-related questions and providing real-time guidance throughout the rehabilitation journey.
+## ✨ Key Features
 
-Database-Driven Progress Tracking
-Stores user accounts, patient profiles, exercise plans, daily session logs, and gamification progress in a structured relational database.
+### 🧠 Personalized Recovery Plans
+Generates custom physiotherapy exercise plans based on:
+- Age
+- Injury Type
+- Pain Level
+- Activity Level
 
-Project Structure
-<img width="704" height="487" alt="image" src="https://github.com/user-attachments/assets/37d424b8-b7f9-49ad-8e4f-d0d60aea0bfb" />
+### 🔄 Adaptive Daily Feedback System
+Recovery plans are updated based on user feedback such as:
+- Pain level after exercises
+- Completion percentage
+- Difficulty rating
 
-Getting Started
-Prerequisites
+### 🏥 Injury-Specific Rehabilitation
+Supports multiple common injury categories:
+- Knee Pain
+- Lower Back Pain
+- Shoulder Injury
+- Ankle Sprain
+- Hip Pain
+- Neck Pain
 
-Python 3.10+
-Node.js 18+
-npm
+### 📈 Progressive Recovery Logic
+The system tracks repeated injury cycles and reduces intensity appropriately for safer rehabilitation.
 
-1. Clone the Repository
+### 🎮 Gamification Layer
+Keeps users motivated through:
+- XP system
+- Recovery levels
+- Streaks
+- Achievement badges
 
+### 💬 AI Recovery Assistant
+Includes a chatbot for recovery-related support and guidance.
+
+### 🗃️ Database-Driven Progress Tracking
+Stores:
+- user accounts
+- patient profiles
+- exercise plans
+- daily logs
+- gamification progress
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- React
+- TypeScript
+- Vite
+- React Router
+- Framer Motion
+- Chart.js
+- Lucide React
+
+### Backend
+- Python
+- Flask
+- SQLite
+
+---
+
+## 📂 Project Structure
+
+```bash
+physioai/
+│
+├── backend/
+│   ├── app.py
+│   ├── chatbot.py
+│   ├── gamification.py
+│   ├── plan_generator.py
+│   ├── schema.sql
+│   ├── requirements.txt
+│   └── physioai.db
+│
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   ├── index.html
+│   └── tsconfig.json
+│
+└── README.md
+⚙️ How It Works
+1. User Registration & Login
+
+Users can create an account and securely log in.
+
+2. Profile Setup
+
+Users enter:
+
+age
+injury type
+pain level
+activity level
+3. Plan Generation
+
+The backend creates a personalized recovery plan using rule-based logic.
+
+4. Daily Progress Logging
+
+Users submit feedback after sessions:
+
+pain level
+completion percentage
+difficulty
+5. Plan Adaptation
+
+The system modifies the next plan based on recovery performance.
+
+6. Gamified Motivation
+
+Users earn XP, levels, streaks, and badges as they progress.
+
+🧠 Recovery Logic
+
+KinetiqAI uses rule-based adaptive physiotherapy logic:
+
+Pain-Based Filtering
+High pain (7–10): only beginner-safe exercises
+Medium pain (4–6): low to moderate difficulty
+Low pain (1–3): broader progression based on activity level
+Recurring Injury Handling
+
+If a user recovers and later restarts the same injury:
+
+intensity is reduced
+only beginner-safe movements are prioritized
+progression becomes more cautious
+Volume Personalization
+
+Exercise reps and sets are adjusted using:
+
+age
+pain severity
+activity level
+recovery cycle
+🎮 Gamification System
+
+The app includes a motivational recovery layer with:
+
+XP Rewards
+
+Users earn XP based on session completion.
+
+Levels
+
+Progression stages include:
+
+Beginner
+Recovering
+Improving
+Strong
+Fully Fit
+Badges
+
+Example achievements:
+
+First Step
+Hat Trick
+Week Warrior
+Century
+Legend
+Streak Tracking
+
+Encourages consistent daily rehabilitation.
+
+🧪 Setup Instructions
+1️⃣ Clone the Repository
 git clone https://github.com/Sham1616/KinetiqAI.git
 cd KinetiqAI
-
-2. Backend Setup
-
+2️⃣ Backend Setup
 cd backend
 pip install -r requirements.txt
 python app.py
-The Flask backend will start on http://localhost:5000.
 
-3. Frontend Setup
+The Flask backend will run locally.
+
+3️⃣ Frontend Setup
 
 Open a new terminal:
+
 cd frontend
 npm install
 npm run dev
-The frontend will start via Vite on http://localhost:5173.
 
-Gamification System
-KinetiqAI includes a motivational layer to support consistent rehabilitation:
-XP & Levels
-Users earn XP for each completed session. As XP accumulates, they progress through recovery stages:
-Beginner → Recovering → Improving → Strong → Fully Fit
-Streak Tracking
-Daily streaks are tracked to encourage consistent rehabilitation habits.
+The frontend will start using Vite.
 
-Roadmap
-Planned features for future development:
+📡 API Highlights
 
- AI-powered posture and form detection via camera
- Video-based exercise feedback
- Wearable sensor integration
- Physiotherapist / doctor dashboard
- JWT-based secure authentication
- Cloud deployment (AWS / GCP)
- Advanced patient analytics and reporting
+Some core backend endpoints include:
+
+Authentication
+POST /api/register
+POST /api/login
+Profile & Plan
+POST /api/profile
+GET /api/profile/<user_id>
+Feedback & Recovery Tracking
+daily plan adaptation
+progress logging
+injury recovery cycle tracking
+🔒 Notes
+This project is a prototype / educational healthcare-tech solution
+It is not a replacement for licensed physiotherapy or medical diagnosis
+User passwords are currently stored in a basic format for development and should be hashed before production deployment
+📌 Future Improvements
+
+Potential next upgrades:
+
+AI-powered posture/form detection
+video-based exercise feedback
+wearable sensor integration
+doctor/physiotherapist dashboard
+secure authentication with JWT
+cloud deployment
+advanced patient analytics
+👨‍💻 Developed By
+
+Sham
+Project: KinetiqAI
+Theme: AI for Personalized Physiotherapy Recovery
+
+📜 License
+
+This project is open for academic, prototype, and demonstration purposes.
 
 
-Disclaimer
-KinetiqAI is a prototype and educational healthcare-tech solution. It is not a substitute for licensed physiotherapy, medical diagnosis, or professional clinical advice. 
+---
+
+# ✅ Recommended next step
+Also add a **`.gitignore`** before pushing, because right now your repo may include unnecessary files like:
+
+- `node_modules`
+- `.venv`
+- `__pycache__`
+- `.db`
+- build logs
+
+Use this:
+
+```gitignore
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+.env
+venv/
+.venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
