@@ -200,9 +200,12 @@ Encourages consistent daily rehabilitation.
 
 🧪 Setup Instructions
 1️⃣ Clone the Repository
+
 git clone https://github.com/Sham1616/KinetiqAI.git
 cd KinetiqAI
+
 2️⃣ Backend Setup
+
 cd backend
 pip install -r requirements.txt
 python app.py
@@ -248,53 +251,3 @@ doctor/physiotherapist dashboard
 secure authentication with JWT
 cloud deployment
 advanced patient analytics
-👨‍💻 Developed By
-
-Sham
-Project: KinetiqAI
-Theme: AI for Personalized Physiotherapy Recovery
-
-📜 License
-
-This project is open for academic, prototype, and demonstration purposes.
-
-
----
-
-# ✅ Recommended next step
-Also add a **`.gitignore`** before pushing, because right now your repo may include unnecessary files like:
-
-- `node_modules`
-- `.venv`
-- `__pycache__`
-- `.db`
-- build logs
-
-Use this:
-
-```gitignore
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.db
-.env
-venv/
-.venv/
-
-# Node
-node_modules/
-dist/
-build/
-
-# Logs
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
