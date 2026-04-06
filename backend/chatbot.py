@@ -1,136 +1,83 @@
 """
-PhysioAI - AI Chatbot Physiotherapist
-Integrates with Anthropic Claude API for intelligent responses.
-Falls back to rule-based responses if API unavailable.
+KinetiqAI - AI Chatbot Physiotherapist
+Integrates with Google Gemini API using frontend-provided API token for a lively engine.
 """
 
-import os
 import json
 
-# Try importing the Anthropic library
-try:
-    import anthropic
-    ANTHROPIC_AVAILABLE = True
-except ImportError:
-    ANTHROPIC_AVAILABLE = False
+import urllib.request
+import urllib.error
 
 
-SYSTEM_PROMPT = """You are PhysioBot, an empathetic and knowledgeable AI physiotherapist assistant.
-Your role is to:
-1. Answer questions about exercises, recovery, and physiotherapy
-2. Provide motivation and encouragement
-3. Suggest safe modifications to exercises
-4. Explain pain management strategies
-5. Track patient progress and celebrate milestones
-
-Patient context will be provided when available. Always:
-- Be warm, encouraging, and supportive
-- Prioritize patient safety — if pain is severe, recommend seeing a doctor
-- Give specific, actionable advice
-- Keep responses concise (2-4 sentences usually)
-- Use simple language, not medical jargon
-
-IMPORTANT: You are an AI assistant, not a replacement for professional medical care.
-Always mention seeing a healthcare provider for serious concerns."""
-
-
-# ─── Rule-based fallback responses ────────────────────────────────────────────
-
-FALLBACK_RESPONSES = {
-    "pain": [
-        "If you're experiencing increased pain, it's important to rest and reduce intensity. Apply ice for 15-20 minutes and avoid exercises that worsen the pain. If pain persists beyond 48 hours, consult your physiotherapist.",
-        "Pain during recovery is normal, but sharp or severe pain is a signal to stop. Try reducing your reps by 30% and focus on gentle range-of-motion exercises today. 💪",
-    ],
-    "exercise": [
-        "Great question! For best results, perform exercises slowly and with control — quality beats quantity every time. Make sure to warm up for 5 minutes before starting your plan.",
-        "Remember to breathe steadily during exercises — exhale on exertion and inhale on the return. This helps with stability and oxygen flow to muscles. 🌬️",
-    ],
-    "motivation": [
-        "You're doing amazing! Recovery is a journey, not a race. Every small effort compounds into huge progress over time. Keep going — your future self will thank you! 🌟",
-        "Progress isn't always linear, and that's completely okay! Some days feel harder, but showing up consistently is what drives recovery. You've got this! 💪",
-    ],
-    "streak": [
-        "Your consistency is your superpower! Streaks like yours build neural pathways that make movement easier and more natural. Keep that fire going! 🔥",
-    ],
-    "default": [
-        "That's a great question! Based on your recovery plan, focus on completing your daily exercises consistently. Consistency is the most powerful tool in physiotherapy.",
-        "I'm here to support your recovery journey! For personalized advice, complete your daily exercises and feedback — your plan adapts based on how you're feeling.",
-        "Remember: recovery happens in the rest periods too! Make sure you're sleeping well, staying hydrated, and eating enough protein to support tissue repair. 🥗",
-    ]
-}
-
-
-def get_chat_response(message: str, history: list, patient_context: dict) -> str:
-    """
-    Get a response from the AI chatbot.
-    Tries Anthropic API first, falls back to rule-based responses.
-    """
-    # Try Anthropic API
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if ANTHROPIC_AVAILABLE and api_key:
-        try:
-            return _get_llm_response(message, history, patient_context, api_key)
-        except Exception as e:
-            print(f"⚠️  LLM API error: {e}. Using fallback.")
-
-    # Fallback to rule-based
-    return _get_fallback_response(message, patient_context)
-
-
-def _get_llm_response(message: str, history: list, patient_context: dict, api_key: str) -> str:
-    """Call the Anthropic Claude API."""
-    client = anthropic.Anthropic(api_key=api_key)
-
-    # Build context string
-    context_str = ""
-    if patient_context:
-        context_str = f"""
-Current patient context:
-- Age: {patient_context.get('age', 'unknown')}
-- Injury: {patient_context.get('injury_type', 'unknown')}
-- Current pain level: {patient_context.get('pain_level', 'unknown')}/10
-- Activity level: {patient_context.get('activity_level', 'unknown')}
+SYSTEM_PROMPT = """You are KinetiqBot, an empathetic and professional AI physiotherapist assistant for the KinetiqAI platform.
+Guidelines:
+1. BALANCE: Keep responses concise but warm and supportive. Avoid the previous 'hyper-minimal' one-word style.
+2. LENGTH: Aim for 60-120 words for medical advice. Greetings should be 1-2 friendly sentences.
+3. STRUCTURE: Use bold headers (e.g., **Key Instruction**) and clean newlines (\n) for readability.
+4. VALUE: Briefly explain the clinical reason behind the advice to provide better support.
+5. NO ASTERIKS: Do NOT use '*' for bullets. Rely on bolding and newlines for clarity.
 """
 
-    # Build message history for API
-    messages = []
-    for msg in history[-10:]:  # Last 10 messages for context
-        if msg.get("role") in ["user", "assistant"]:
-            messages.append({"role": msg["role"], "content": msg["content"]})
-
-    messages.append({"role": "user", "content": message})
-
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=500,
-        system=SYSTEM_PROMPT + context_str,
-        messages=messages
-    )
-
-    return response.content[0].text
-
-
-def _get_fallback_response(message: str, patient_context: dict) -> str:
-    """Rule-based fallback chatbot response."""
-    import random
-    message_lower = message.lower()
-
-    # Keyword matching
-    if any(w in message_lower for w in ["pain", "hurt", "ache", "sore"]):
-        responses = FALLBACK_RESPONSES["pain"]
-    elif any(w in message_lower for w in ["exercise", "workout", "movement", "stretch"]):
-        responses = FALLBACK_RESPONSES["exercise"]
-    elif any(w in message_lower for w in ["motivat", "tired", "give up", "hard", "difficult", "struggle"]):
-        responses = FALLBACK_RESPONSES["motivation"]
-    elif any(w in message_lower for w in ["streak", "badge", "xp", "level", "points"]):
-        responses = FALLBACK_RESPONSES["streak"]
-    else:
-        responses = FALLBACK_RESPONSES["default"]
-
-    response = random.choice(responses)
-
-    # Personalize if we have context
-    if patient_context.get("injury_type"):
-        response += f" (Tip: Your {patient_context['injury_type'].lower()} recovery is progressing — keep it up!)"
-
-    return response
+def get_chat_response(message: str, history: list, patient_context: dict, api_key: str):
+    """
+    Get a dynamic response using a model fallback chain.
+    """
+    # Hardcoded key for professional deployment
+    api_key = api_key or "AIzaSyDVZurgxZ7EVNqxr72Ejlf_vNk6G2Vudco"
+    
+    # Prioritizing Gemini 2.5 Flash which was confirmed active in diagnostic check
+    models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    endpoints = ["v1beta", "v1"]
+    
+    for model_name in models:
+        for ep in endpoints:
+            try:
+                context_str = ""
+                if patient_context:
+                    context_str = f"[SYSTEM: Patient context - Age: {patient_context.get('age')}, Injury: {patient_context.get('injury_type')}, Pain Level: {patient_context.get('pain_level')}/10, Activity Profile: {patient_context.get('activity_level')}]\n"
+                    
+                contents = []
+                for msg in history[-10:]:
+                    role = "user" if msg.get("role") == "user" else "model"
+                    contents.append({
+                        "role": role,
+                        "parts": [{"text": msg["content"]}]
+                    })
+                    
+                final_message = f"[SYSTEM INSTRUCTION: {SYSTEM_PROMPT}]\n\n{context_str}\nPatient Message: {message}"
+                contents.append({"role": "user", "parts": [{"text": final_message}]})
+                
+                url = f"https://generativelanguage.googleapis.com/{ep}/models/{model_name}:generateContent?key={api_key}"
+                print(f"[AI] Sync: Calling {url}")
+                
+                payload = {
+                    "contents": contents,
+                    "safetySettings": [{"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}]
+                }
+                
+                req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={"Content-Type": "application/json"}, method='POST')
+                
+                with urllib.request.urlopen(req) as response:
+                    result = json.loads(response.read().decode('utf-8'))
+                    text = result["candidates"][0]["content"]["parts"][0]["text"]
+                    return {"response": text.strip(), "status": "ok"}
+                    
+            except urllib.error.HTTPError as e:
+                # If 404, it might just be the wrong endpoint/model combo, so continue
+                if e.code == 404:
+                    continue
+                
+                error_msg = e.read().decode('utf-8')
+                # If 429 (Quota), try the next model in the chain as it may have separate quota
+                if e.code == 429:
+                    print(f"[AI] Quota exhausted for {model_name}. Attempting fallback...")
+                    break # Break from endpoints loop to try next model
+                
+                if e.code in [400, 403]:
+                     return {"response": "The Gemini API Key provided was invalid or lacks permissions.", "status": "needs_key"}
+                return {"response": f"Sorry, my neural core encountered an HTTP error {e.code}: {error_msg}.", "status": "error"}
+            except Exception as e:
+                # Continue reaching through fallbacks on generic error
+                continue
+            
+    return {"response": "None of the AI models (Flash, Pro, Legacy) were found in your region. Check Cloud Console permissions.", "status": "error"}

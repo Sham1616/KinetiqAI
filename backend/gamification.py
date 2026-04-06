@@ -23,11 +23,11 @@ def calculate_xp(completion_pct: int) -> int:
 
 # ─── Levels ────────────────────────────────────────────────────────────────────
 LEVELS = [
-    (0,    "Beginner",    "🌱"),
-    (100,  "Recovering",  "🔄"),
-    (300,  "Improving",   "📈"),
-    (600,  "Strong",      "💪"),
-    (1000, "Fully Fit",   "🏆"),
+    (0,    "Beginner",    "sprout"),
+    (100,  "Recovering",  "refresh-cw"),
+    (300,  "Improving",   "trending-up"),
+    (600,  "Strong",      "dumbbell"),
+    (1000, "Fully Fit",   "trophy"),
 ]
 
 
@@ -58,7 +58,7 @@ def get_level_info(xp: int) -> dict:
 
     return {
         "name": current_level[1],
-        "emoji": current_level[2],
+        "icon_id": current_level[2],
         "threshold": current_level[0],
         "next_threshold": next_level[0] if next_level else None,
         "next_name": next_level[1] if next_level else "Max Level",
@@ -68,14 +68,14 @@ def get_level_info(xp: int) -> dict:
 
 # ─── Badges ────────────────────────────────────────────────────────────────────
 BADGE_DEFINITIONS = [
-    {"id": "first_session", "name": "First Step", "emoji": "👣", "description": "Completed your first session", "xp_required": 10},
-    {"id": "streak_3",      "name": "Hat Trick",  "emoji": "🎩", "description": "3-day streak",              "streak_required": 3},
-    {"id": "streak_7",      "name": "Week Warrior","emoji": "⚔️", "description": "7-day streak",              "streak_required": 7},
-    {"id": "xp_100",        "name": "Century",    "emoji": "💯", "description": "Earned 100 XP",             "xp_required": 100},
-    {"id": "xp_500",        "name": "Powerhouse", "emoji": "⚡", "description": "Earned 500 XP",             "xp_required": 500},
-    {"id": "xp_1000",       "name": "Legend",     "emoji": "🌟", "description": "Earned 1000 XP",            "xp_required": 1000},
-    {"id": "full_day",      "name": "Perfectionist","emoji": "✅","description": "100% completion in a day",  "xp_required": 50},
-    {"id": "streak_14",     "name": "Iron Will",  "emoji": "🔩", "description": "14-day streak",             "streak_required": 14},
+    {"id": "first_session", "name": "First Step", "icon_id": "footprints", "description": "Completed your first session", "xp_required": 10},
+    {"id": "streak_3",      "name": "Hat Trick",  "icon_id": "target", "description": "3-day streak",              "streak_required": 3},
+    {"id": "streak_7",      "name": "Week Warrior","icon_id": "shield", "description": "7-day streak",              "streak_required": 7},
+    {"id": "xp_100",        "name": "Century",    "icon_id": "star", "description": "Earned 100 XP",             "xp_required": 100},
+    {"id": "xp_500",        "name": "Powerhouse", "icon_id": "zap", "description": "Earned 500 XP",             "xp_required": 500},
+    {"id": "xp_1000",       "name": "Legend",     "icon_id": "crown", "description": "Earned 1000 XP",            "xp_required": 1000},
+    {"id": "full_day",      "name": "Perfectionist","icon_id": "check", "description": "100% completion in a day",  "xp_required": 50},
+    {"id": "streak_14",     "name": "Iron Will",  "icon_id": "activity", "description": "14-day streak",             "streak_required": 14},
 ]
 
 

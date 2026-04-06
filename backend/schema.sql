@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS feedback_logs (
     completion_pct INTEGER NOT NULL,
     difficulty TEXT NOT NULL,
     log_date DATE NOT NULL,
+    injury_type TEXT,
+    exercises_done TEXT,  -- JSON array of exercise objects
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
