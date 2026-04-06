@@ -243,18 +243,27 @@ Feedback & Recovery Tracking
 daily plan adaptation
 progress logging
 injury recovery cycle tracking
+### Feedback & Recovery Tracking
+- daily plan adaptation
+- progress logging
+- injury recovery cycle tracking
 
-🔒 Notes
-This project is a prototype / educational healthcare-tech solution
-It is not a replacement for licensed physiotherapy or medical diagnosis
-User passwords are currently stored in a basic format for development and should be hashed before production deployment
+---
 
-📌 Future Improvements
+## 🔒 Notes
 
-AI-powered posture/form detection
-video-based exercise feedback
-wearable sensor integration
-doctor/physiotherapist dashboard
-secure authentication with JWT
-cloud deployment
-advanced patient analytics
+- This project is a prototype / educational healthcare-tech solution
+- It is not a replacement for licensed physiotherapy or medical diagnosis
+- User passwords are currently stored in a basic format for development and should be hashed before production deployment
+
+---
+
+## 📌 Future Improvements
+
+- AI-powered posture/form detection
+- video-based exercise feedback
+- wearable sensor integration
+- doctor/physiotherapist dashboard
+- secure authentication with JWT
+- cloud deployment
+- advanced patient analytics
