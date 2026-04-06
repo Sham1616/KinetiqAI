@@ -123,11 +123,11 @@ Users can create an account and securely log in.
 2. Profile Setup
 
 Users enter:
-
 age
 injury type
 pain level
 activity level
+
 3. Plan Generation
 
 The backend creates a personalized recovery plan using rule-based logic.
@@ -139,6 +139,7 @@ Users submit feedback after sessions:
 pain level
 completion percentage
 difficulty
+
 5. Plan Adaptation
 
 The system modifies the next plan based on recovery performance.
@@ -201,6 +202,7 @@ Streak Tracking
 Encourages consistent daily rehabilitation.
 
 🧪 Setup Instructions
+
 1️⃣ Clone the Repository
 
 git clone https://github.com/Sham1616/KinetiqAI.git
