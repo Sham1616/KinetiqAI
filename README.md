@@ -1,4 +1,4 @@
-# KinetiqAI  
+# KinetiqAI
 ### AI-Powered Personalized Physiotherapy Recovery System
 
 KinetiqAI is an intelligent physiotherapy recovery platform that helps users recover from common injuries through **personalized exercise plans, daily feedback adaptation, AI-assisted guidance, and gamified motivation**.
@@ -114,7 +114,6 @@ KinetiqAI/
 │
 └── README.md
 ```
-
 ⚙️ How It Works
 1. User Registration & Login
 
@@ -123,11 +122,11 @@ Users can create an account and securely log in.
 2. Profile Setup
 
 Users enter:
+
 age
 injury type
 pain level
 activity level
-
 3. Plan Generation
 
 The backend creates a personalized recovery plan using rule-based logic.
@@ -139,7 +138,6 @@ Users submit feedback after sessions:
 pain level
 completion percentage
 difficulty
-
 5. Plan Adaptation
 
 The system modifies the next plan based on recovery performance.
@@ -150,7 +148,7 @@ Users earn XP, levels, streaks, and badges as they progress.
 
 🧠 Recovery Logic
 
-KinetiqAI uses rule-based adaptive physiotherapy logic:
+KinetiqAI uses rule-based adaptive physiotherapy logic.
 
 Pain-Based Filtering
 High pain (7–10): only beginner-safe exercises
@@ -202,14 +200,10 @@ Streak Tracking
 Encourages consistent daily rehabilitation.
 
 🧪 Setup Instructions
-
 1️⃣ Clone the Repository
-
 git clone https://github.com/Sham1616/KinetiqAI.git
 cd KinetiqAI
-
 2️⃣ Backend Setup
-
 cd backend
 pip install -r requirements.txt
 python app.py
