@@ -3,28 +3,7 @@ AI-Powered Personalized Physiotherapy System
 
 KinetiqAI
 AI-Powered Personalized Physiotherapy Recovery System
-Show Image
-Show Image
-Show Image
-Show Image
-Show Image
 Smarter rehabilitation through adaptive AI — personalized exercise plans that evolve with your recovery.
-</div>
-
-Table of Contents
-
-Overview
-Key Features
-Tech Stack
-Project Structure
-Getting Started
-API Reference
-Recovery Logic
-Gamification System
-Roadmap
-Disclaimer
-License
-
 
 Overview
 KinetiqAI is an intelligent physiotherapy recovery platform designed to make rehabilitation more accessible, adaptive, and engaging. Unlike static recovery programs, KinetiqAI generates dynamic, personalized exercise plans that continuously evolve based on each user's daily progress and pain feedback.
@@ -54,26 +33,7 @@ Database-Driven Progress Tracking
 Stores user accounts, patient profiles, exercise plans, daily session logs, and gamification progress in a structured relational database.
 
 Project Structure
-KinetiqAI/
-│
-├── backend/
-│   ├── app.py                  # Main Flask application
-│   ├── chatbot.py              # AI recovery assistant
-│   ├── gamification.py         # XP, levels, badges, streaks
-│   ├── plan_generator.py       # Adaptive exercise plan logic
-│   ├── schema.sql              # Database schema
-│   ├── requirements.txt        # Python dependencies
-│   └── physioai.db             # SQLite database
-│
-├── frontend/
-│   ├── src/                    # React source files
-│   ├── package.json
-│   ├── index.html
-│   └── tsconfig.json
-│
-└── README.md
-
-
+<img width="704" height="487" alt="image" src="https://github.com/user-attachments/assets/37d424b8-b7f9-49ad-8e4f-d0d60aea0bfb" />
 
 Getting Started
 Prerequisites
