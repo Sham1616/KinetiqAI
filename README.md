@@ -95,7 +95,7 @@ Stores:
 ## 📂 Project Structure
 
 ```bash
-physioai/
+KinetiqAI/
 │
 ├── backend/
 │   ├── app.py
@@ -113,6 +113,8 @@ physioai/
 │   └── tsconfig.json
 │
 └── README.md
+```
+
 ⚙️ How It Works
 1. User Registration & Login
 
