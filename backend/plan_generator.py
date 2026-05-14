@@ -1,10 +1,37 @@
 """
-PhysioAI - Plan Generator
-Rule-based logic to generate and adapt personalized physiotherapy plans.
+PhysioAI - AI + ML-Powered Plan Generator
+==========================================
+Pipeline:
+  1. ML/DL Models (ml_model.py)   → predict difficulty cap, volume multiplier, exercise count
+  2. Exercise selection            → pick from curated library using ML predictions
+  3. Gemini AI                     → enrich each exercise with clinical rationale
+  4. Rule-based fallback           → used if both ML and Gemini fail
+
+The ML layer runs LOCALLY (scikit-learn) so it always works even without internet.
+Gemini enriches the plan with explanatory text when available.
 """
 
-# ─── Exercise Library ─────────────────────────────────────────────────────────
-# Each exercise has: name, category, difficulty (1=easy, 2=med, 3=hard), description
+import json
+import urllib.request
+import urllib.error
+
+# Import local ML engine (trains / loads models at import time)
+try:
+    from ml_model import predict_plan_params, get_model_metrics
+    _ML_AVAILABLE = True
+    print("[PlanGen] ML engine loaded successfully.")
+except Exception as _ml_err:
+    _ML_AVAILABLE = False
+    print(f"[PlanGen] ML engine unavailable: {_ml_err}. Using rule-based fallback.")
+
+# ─── Gemini Config ─────────────────────────────────────────────────────────────
+
+GEMINI_API_KEY   = "AIzaSyDVZurgxZ7EVNqxr72Ejlf_vNk6G2Vudco"
+GEMINI_MODELS    = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+GEMINI_ENDPOINTS = ["v1beta", "v1"]
+
+
+# ─── Exercise Library ──────────────────────────────────────────────────────────
 
 EXERCISE_LIBRARY = {
     "knee": [
@@ -93,7 +120,6 @@ EXERCISE_LIBRARY = {
     ],
 }
 
-# General/mobility exercises for any injury
 GENERAL_EXERCISES = [
     {"name": "Deep Breathing", "category": "general", "difficulty": 1, "video_id": "-7-CAFhJn78",
      "description": "Diaphragmatic breathing for relaxation and recovery", "reps": 10, "sets": 2},
@@ -101,36 +127,275 @@ GENERAL_EXERCISES = [
      "description": "Walk at comfortable pace for 10-15 minutes", "reps": 1, "sets": 1},
 ]
 
+DIFF_LABEL = {1: "Beginner", 2: "Intermediate", 3: "Advanced"}
+
+
+# ─── Gemini Rationale Helper ────────────────────────────────────────────────────
+
+def _gemini_rationale(exercises: list, age: int, injury_type: str,
+                       pain_level: int, activity_level: str, ml_params: dict) -> list:
+    """
+    Ask Gemini to add a short clinical rationale to each exercise.
+    Returns the enriched list; falls back to generic text on failure.
+    """
+    exercise_names = [e["name"] for e in exercises]
+    prompt = f"""You are an expert clinical physiotherapist AI.
+
+A patient has the following profile:
+- Age: {age}
+- Injury: {injury_type}
+- Pain Level: {pain_level}/10
+- Activity Level: {activity_level}
+- Plan selected by ML models: difficulty_cap={ml_params['max_difficulty']}, volume_multiplier={ml_params['volume_multiplier']:.2f}
+
+The following exercises have been chosen for them:
+{json.dumps(exercise_names)}
+
+For EACH exercise, write a single concise clinical rationale (max 15 words) explaining
+WHY it suits this specific patient. Be specific about pain level, age, or injury.
+
+Respond ONLY with a valid JSON object mapping exercise name to rationale string.
+Example: {{"Heel Slides": "Gentle range-of-motion ideal for acute knee pain at level {pain_level}."}}
+"""
+    payload = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.3, "responseMimeType": "application/json"},
+        "safetySettings": [
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
+        ]
+    }
+
+    for model in GEMINI_MODELS:
+        for ep in GEMINI_ENDPOINTS:
+            try:
+                url = (f"https://generativelanguage.googleapis.com/{ep}/models/"
+                       f"{model}:generateContent?key={GEMINI_API_KEY}")
+                req = urllib.request.Request(
+                    url, data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}, method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    result = json.loads(resp.read().decode("utf-8"))
+                    raw = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    if raw.startswith("```"):
+                        raw = "\n".join(
+                            l for l in raw.split("\n") if not l.strip().startswith("```")
+                        )
+                    rationale_map = json.loads(raw)
+                    for ex in exercises:
+                        ex["ai_rationale"] = rationale_map.get(
+                            ex["name"],
+                            f"Clinically appropriate for {injury_type} at pain level {pain_level}."
+                        )
+                    print(f"[PlanGen] Gemini rationale enrichment success via {model}.")
+                    return exercises
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    continue
+                if e.code == 429:
+                    break
+                return _add_default_rationale(exercises, injury_type, pain_level)
+            except Exception:
+                continue
+
+    return _add_default_rationale(exercises, injury_type, pain_level)
+
+
+def _add_default_rationale(exercises: list, injury_type: str, pain_level: int) -> list:
+    for ex in exercises:
+        ex.setdefault(
+            "ai_rationale",
+            f"Selected by ML models for {injury_type} with pain level {pain_level}/10."
+        )
+    return exercises
+
+
+# ─── Core Plan Builder (ML-driven) ─────────────────────────────────────────────
+
+def _ml_select_exercises(age: int, injury_type: str, pain_level: int,
+                          activity_level: str, grade: int) -> tuple:
+    """
+    Use ML models to get (max_difficulty, volume_multiplier, max_exercises),
+    then select exercises from the library accordingly.
+
+    Returns (exercises_list, ml_params_dict)
+    """
+    ml_params = predict_plan_params(age, pain_level, activity_level, injury_type, grade)
+    max_diff = ml_params["max_difficulty"]
+    vol_mult = ml_params["volume_multiplier"]
+    max_exs  = ml_params["max_exercises"]
+
+    # Select exercises from library filtered by difficulty cap
+    injury_key = _map_injury(injury_type)
+    pool = EXERCISE_LIBRARY.get(injury_key, []).copy()
+    if not pool:
+        pool = GENERAL_EXERCISES.copy()
+
+    filtered = [e for e in pool if e["difficulty"] <= max_diff]
+
+    # If too few exercises, supplement with general exercises
+    if len(filtered) < 2:
+        filtered += [e for e in GENERAL_EXERCISES if e["difficulty"] <= max_diff]
+
+    # Prefer a mix of difficulties (easiest to hardest)
+    selected = filtered[:max_exs]
+
+    # Apply ML volume multiplier to reps/sets
+    result = []
+    for ex in selected:
+        ex = ex.copy()
+        ex["reps"] = max(5, int(round(ex["reps"] * vol_mult)))
+        ex["sets"] = max(1, int(round(ex["sets"] * vol_mult)))
+        ex["difficulty_label"] = DIFF_LABEL.get(ex["difficulty"], "Beginner")
+        result.append(ex)
+
+    return result, ml_params
+
+
+# ─── Public API ────────────────────────────────────────────────────────────────
 
 def generate_plan(age, injury_type, pain_level, activity_level, grade=1):
     """
-    Generate a personalized exercise plan using rule-based logic.
-    
-    Rules:
-    - High pain (7-10) → Only difficulty 1 exercises + general
-    - Medium pain (4-6) → Difficulty 1-2 exercises
-    - Low pain (1-3) → Difficulty 1-3 based on activity level
-    - Activity level adjusts volume (sets/reps)
-    - grade (1/2/3) controls severity reduction for recurring injuries
-    """
-    pain_level = int(pain_level)
-    age = int(age)
-    
-    # Get injury-specific exercises
-    injury_key = _map_injury(injury_type)
-    exercises = EXERCISE_LIBRARY.get(injury_key, []).copy()
+    Generate a personalised exercise plan.
 
-    # If it's a custom/unknown injury, use general exercises as the base
+    Priority:
+      1. ML models (RandomForest + GradBoost + MLP) → exercise selection & volume
+      2. Gemini AI                                    → clinical rationale text
+      3. Rule-based fallback                          → if ML unavailable
+    """
+    age        = int(age)
+    pain_level = int(pain_level)
+    grade      = int(grade)
+
+    if _ML_AVAILABLE:
+        try:
+            exercises, ml_params = _ml_select_exercises(
+                age, injury_type, pain_level, activity_level, grade
+            )
+            print(f"[PlanGen] ML predicted → difficulty_cap={ml_params['max_difficulty']}, "
+                  f"volume={ml_params['volume_multiplier']:.2f}, "
+                  f"max_exercises={ml_params['max_exercises']}, "
+                  f"models={ml_params['models_used']}")
+
+            # Enrich with Gemini rationale
+            exercises = _gemini_rationale(
+                exercises, age, injury_type, pain_level, activity_level, ml_params
+            )
+
+            # Attach ML metadata to the first exercise for frontend display
+            exercises[0]["ml_metadata"] = {
+                "engine": "ML + AI",
+                "models": ml_params["models_used"],
+                "confidence": ml_params["confidence"],
+                "volume_multiplier": ml_params["volume_multiplier"]
+            }
+
+            return exercises
+
+        except Exception as e:
+            print(f"[PlanGen] ML pipeline error: {e} — falling back to rule-based.")
+
+    # ── Rule-based fallback ───────────────────────────────────────────────────
+    return _rule_based_generate(age, injury_type, pain_level, activity_level, grade)
+
+
+def adapt_plan(current_plan, pain_level, completion_pct, difficulty,
+               age=30, injury_type="Knee Pain", activity_level="medium"):
+    """
+    Adapt the current exercise plan using ML-informed logic + Gemini insight.
+
+    The ML engine re-predicts parameters from updated pain level, then applies
+    to each exercise incrementally.
+    """
+    pain_level     = int(pain_level)
+    completion_pct = int(completion_pct)
+    age            = int(age)
+
+    # Full safety reset always overrides everything
+    if pain_level >= 7 or difficulty == "hard":
+        return _safety_reset(age, injury_type, activity_level, pain_level)
+
+    if _ML_AVAILABLE:
+        try:
+            # Re-predict volume with current (updated) pain level
+            ml_params = predict_plan_params(age, pain_level, activity_level, injury_type, grade=1)
+            new_vol   = ml_params["volume_multiplier"]
+
+            adapted = []
+            for ex in current_plan:
+                ex = ex.copy()
+
+                # Completion < 50% → reduce further on top of ML volume
+                if completion_pct < 50:
+                    new_vol = max(0.4, new_vol * 0.75)
+
+                # Difficulty easy → boost
+                if difficulty == "easy" and completion_pct >= 50:
+                    ex["reps"] = min(30, max(5, int(ex["reps"] * 1.2)))
+                    ex["sets"] = min(5, ex["sets"] + 1)
+                else:
+                    # Apply ML-predicted volume multiplier
+                    base_reps = ex.get("reps", 10)
+                    base_sets = ex.get("sets", 2)
+                    ex["reps"] = max(5, int(round(base_reps * new_vol)))
+                    ex["sets"] = max(1, int(round(base_sets * new_vol)))
+
+                ex.setdefault("difficulty_label", DIFF_LABEL.get(ex.get("difficulty", 1), "Beginner"))
+                ex["ai_rationale"] = (
+                    f"ML-adapted: volume×{new_vol:.2f} based on pain {pain_level}/10 "
+                    f"and {completion_pct}% completion."
+                )
+                adapted.append(ex)
+
+            print(f"[PlanGen] ML adapted plan (pain={pain_level}, completion={completion_pct}%, "
+                  f"difficulty={difficulty}, new_vol={new_vol:.2f})")
+            return adapted
+
+        except Exception as e:
+            print(f"[PlanGen] ML adapt error: {e} — falling back to rule-based.")
+
+    return _rule_based_adapt(current_plan, pain_level, completion_pct, difficulty,
+                              age, injury_type, activity_level)
+
+
+# ─── Safety Reset ───────────────────────────────────────────────────────────────
+
+def _safety_reset(age, injury_type, activity_level, pain_level):
+    """Full reset to beginner exercises when pain is high or session was too hard."""
+    injury_key  = _map_injury(injury_type)
+    library     = EXERCISE_LIBRARY.get(injury_key, GENERAL_EXERCISES).copy()
+    beginners   = [e for e in library if e["difficulty"] == 1]
+    if len(beginners) < 3:
+        beginners += GENERAL_EXERCISES
+
+    result = []
+    for ex in beginners[:5]:
+        ex = ex.copy()
+        ex = _adjust_volume(ex, age, activity_level, pain_level)
+        ex["reps"]            = max(5, int(ex["reps"] * 0.8))
+        ex["sets"]            = max(1, ex["sets"] - 1)
+        ex["difficulty_label"] = "Beginner (Safety Reset)"
+        ex["ai_rationale"]    = (
+            f"Safety reset: high pain ({pain_level}/10) requires beginner-only exercises "
+            "with reduced volume."
+        )
+        result.append(ex)
+    return result
+
+
+# ─── Rule-Based Fallback ────────────────────────────────────────────────────────
+
+def _rule_based_generate(age, injury_type, pain_level, activity_level, grade=1):
+    injury_key = _map_injury(injury_type)
+    exercises  = EXERCISE_LIBRARY.get(injury_key, []).copy()
     if not exercises:
         exercises = GENERAL_EXERCISES.copy()
 
-    # --- Grade 2 & 3: Force beginner-only regardless of pain level ---
     if grade >= 2:
         exercises = [e for e in exercises if e["difficulty"] == 1]
         if len(exercises) < 3:
             exercises += [e for e in GENERAL_EXERCISES if e["difficulty"] == 1]
     else:
-        # Normal grade 1 filtering by pain level
         if pain_level >= 7:
             exercises = [e for e in exercises if e["difficulty"] == 1]
             exercises += GENERAL_EXERCISES
@@ -140,119 +405,70 @@ def generate_plan(age, injury_type, pain_level, activity_level, grade=1):
             if activity_level == "low":
                 exercises = [e for e in exercises if e["difficulty"] <= 2]
 
-    # Limit exercise count: Grade 3 = 3 max, others = 5 max
     max_exercises = 3 if grade >= 3 else 5
-    exercises = exercises[:max_exercises]
+    exercises     = exercises[:max_exercises]
+    grade_mult    = {1: 1.0, 2: 0.7, 3: 0.5}.get(grade, 1.0)
 
-    # Adjust volume for age and activity level
-    grade_volume_multiplier = {1: 1.0, 2: 0.7, 3: 0.5}.get(grade, 1.0)
     adjusted = []
     for ex in exercises:
         ex = ex.copy()
         ex = _adjust_volume(ex, age, activity_level, pain_level)
-        # Apply grade reduction on top of base volume
         if grade >= 2:
-            ex["reps"] = max(5, int(ex["reps"] * grade_volume_multiplier))
-            ex["sets"] = max(1, int(ex["sets"] * grade_volume_multiplier))
-        ex["difficulty_label"] = ["", "Beginner", "Intermediate", "Advanced"][ex["difficulty"]]
+            ex["reps"] = max(5, int(ex["reps"] * grade_mult))
+            ex["sets"] = max(1, int(ex["sets"] * grade_mult))
+        ex["difficulty_label"] = DIFF_LABEL.get(ex["difficulty"], "Beginner")
+        ex["ai_rationale"]     = "Selected by rule-based fallback engine (ML unavailable)."
         adjusted.append(ex)
-
     return adjusted
 
 
-def _adjust_volume(exercise, age, activity_level, pain_level):
-    """Adjust reps/sets based on patient profile."""
-    multiplier = 1.0
+def _rule_based_adapt(current_plan, pain_level, completion_pct, difficulty,
+                       age=30, injury_type="Knee Pain", activity_level="medium"):
+    if pain_level >= 7 or difficulty == "hard":
+        return _safety_reset(age, injury_type, activity_level, pain_level)
 
-    # Age adjustment
+    adapted = []
+    for ex in current_plan:
+        ex = ex.copy()
+        if completion_pct < 50:
+            ex["reps"] = max(5, int(ex["reps"] * 0.7))
+            ex["sets"] = max(1, ex["sets"] - 1)
+        if difficulty == "easy":
+            ex["reps"] = int(ex["reps"] * 1.2)
+            ex["sets"] = min(5, ex["sets"] + 1)
+        elif difficulty == "hard":
+            ex["reps"] = max(5, int(ex["reps"] * 0.8))
+            ex["sets"] = max(1, ex["sets"] - 1)
+        adapted.append(ex)
+    return adapted
+
+
+# ─── Utility Helpers ───────────────────────────────────────────────────────────
+
+def _adjust_volume(exercise, age, activity_level, pain_level):
+    multiplier = 1.0
     if age > 60:
         multiplier *= 0.7
     elif age > 45:
         multiplier *= 0.85
-
-    # Activity level adjustment
     if activity_level == "high":
         multiplier *= 1.3
     elif activity_level == "low":
         multiplier *= 0.8
-
-    # Pain adjustment
     if pain_level >= 7:
         multiplier *= 0.6
-
     exercise["reps"] = max(5, int(exercise["reps"] * multiplier))
     exercise["sets"] = max(1, int(exercise["sets"] * multiplier))
     return exercise
 
 
 def _map_injury(injury_type):
-    """Map injury type string to library key."""
     mapping = {
-        "Knee Pain": "knee",
+        "Knee Pain":       "knee",
         "Lower Back Pain": "back",
         "Shoulder Injury": "shoulder",
-        "Ankle Sprain": "ankle",
-        "Hip Pain": "hip",
-        "Neck Pain": "neck",
+        "Ankle Sprain":    "ankle",
+        "Hip Pain":        "hip",
+        "Neck Pain":       "neck",
     }
     return mapping.get(injury_type, None)
-
-
-def adapt_plan(current_plan, pain_level, completion_pct, difficulty, age=30, injury_type="Knee Pain", activity_level="medium"):
-    """
-    Adapt the current plan based on daily feedback.
-    
-    Rules:
-    - High Pain (>=7) or Difficulty = hard → Switch ALL exercises to difficulty 1 (Beginner)
-    - Pain decreased + Easy → Increase volume incrementally
-    - Completion < 50% → Simplify volume significantly
-    """
-    pain_level = int(pain_level)
-    completion_pct = int(completion_pct)
-    age = int(age)
-
-    # 1. Safety Check: If it was too hard or painful, we do a full "Beginner Reset"
-    if pain_level >= 7 or difficulty == "hard":
-        injury_key = _map_injury(injury_type)
-        library = EXERCISE_LIBRARY.get(injury_key, GENERAL_EXERCISES).copy()
-        
-        # Only take beginner exercises
-        beginner_exs = [e for e in library if e["difficulty"] == 1]
-        
-        # If not enough beginner ones, mix in general
-        if len(beginner_exs) < 3:
-            beginner_exs += GENERAL_EXERCISES
-            
-        adapted = []
-        for ex in beginner_exs[:5]:
-            ex = ex.copy()
-            # Reduce volume even further during a reset
-            ex = _adjust_volume(ex, age, activity_level, pain_level)
-            ex["reps"] = max(5, int(ex["reps"] * 0.8))
-            ex["sets"] = max(1, ex["sets"] - 1)
-            ex["difficulty_label"] = "Beginner (Safety Reset)"
-            adapted.append(ex)
-        return adapted
-
-    # 2. Incremental Adjustment for normal sessions
-    adapted = []
-    for ex in current_plan:
-        ex = ex.copy()
-
-        # Adjust based on completion
-        if completion_pct < 50:
-            ex["reps"] = max(5, int(ex["reps"] * 0.7))
-            ex["sets"] = max(1, ex["sets"] - 1)
-
-        # Adjust based on difficulty feedback
-        if difficulty == "easy":
-            ex["reps"] = int(ex["reps"] * 1.2)
-            ex["sets"] = min(5, ex["sets"] + 1)
-        elif difficulty == "hard":
-            # This case is now handled by the Beginner Reset above, but kept for individual exercise precision
-            ex["reps"] = max(5, int(ex["reps"] * 0.8))
-            ex["sets"] = max(1, ex["sets"] - 1)
-
-        adapted.append(ex)
-
-    return adapted

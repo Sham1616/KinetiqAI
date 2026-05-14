@@ -11,6 +11,11 @@ from datetime import datetime, date
 from plan_generator import generate_plan, adapt_plan
 from chatbot import get_chat_response
 from gamification import calculate_xp, get_level, check_badges
+try:
+    from ml_model import get_model_metrics, retrain as retrain_models
+    _ML_IMPORTED = True
+except Exception:
+    _ML_IMPORTED = False
 
 app = Flask(__name__)
 
@@ -591,6 +596,29 @@ def get_chat_history(user_id):
     ).fetchall()
     conn.close()
     return jsonify([dict(m) for m in msgs])
+
+
+# ─── ML Model Endpoints ──────────────────────────────────────────────────────
+
+@app.route("/api/ml/metrics", methods=["GET"])
+def ml_metrics():
+    """Return ML model training metrics (accuracy, MAE, model names)."""
+    if not _ML_IMPORTED:
+        return jsonify({"error": "ML engine not available"}), 503
+    metrics = get_model_metrics()
+    return jsonify(metrics)
+
+
+@app.route("/api/ml/retrain", methods=["POST"])
+def ml_retrain():
+    """Force a full model retrain (admin use only)."""
+    if not _ML_IMPORTED:
+        return jsonify({"error": "ML engine not available"}), 503
+    try:
+        metrics = retrain_models()
+        return jsonify({"message": "Models retrained successfully", "metrics": metrics})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────

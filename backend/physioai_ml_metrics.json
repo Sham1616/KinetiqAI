@@ -1,0 +1,11 @@
+{
+  "rf_difficulty_accuracy": 0.943,
+  "gb_volume_mae": 0.0112,
+  "mlp_exercises_accuracy": 0.923,
+  "training_samples": 5000,
+  "models": [
+    "RandomForestClassifier (n_estimators=200)",
+    "GradientBoostingRegressor (n_estimators=200)",
+    "MLPClassifier (64-32-16 ReLU)"
+  ]
+}
